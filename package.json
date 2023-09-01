@@ -1,0 +1,23 @@
+{
+  "name": "e-shop",
+  "version": "1.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "start": "node --experimental-specifier-resolution=node cli-app.js",
+    "dev": "nodemon app.js"
+  },
+  "author": "zeroIsScared",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "fastify": "^4.21.0",
+    "fastify-formbody": "^5.3.0",
+    "fastify-swagger": "^5.2.0",
+    "pg": "^8.11.3",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  }
+}
