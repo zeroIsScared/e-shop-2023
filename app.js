@@ -1,10 +1,14 @@
 import Fastify from 'fastify';
-import {res} from './databaseConnection.js';
+import {productRoutes} from './routes/products.js';
+
+import {homePageRoute} from './routes/homePage.js';
 
  const fastify= Fastify({logger:true});
 
 const PORT = {port: 3000};
 
+ fastify.register(productRoutes, {prefix:'/products'});
+ fastify.register(homePageRoute);
 
 const start =  async () =>{
     try{
@@ -16,10 +20,5 @@ const start =  async () =>{
     }
 }
 
-fastify.get('/', (req, rep) =>{
-    const products =  res.rows;
-    const greeting = 'Hello World!'
-    return  {greeting, products};
-})
 
 start();
