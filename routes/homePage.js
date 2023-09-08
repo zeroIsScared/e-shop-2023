@@ -2,9 +2,7 @@ import {pool} from '../databaseConnection.js';
 
 export const homePageRoute = async(fastify, options)=> {
 fastify.get('/',  (req, rep) =>{
-  
-
-    pool.query(
+  pool.query(
        `Select * FROM products`,
        (err, res)=>{
            if(!err) {
