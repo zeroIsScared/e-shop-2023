@@ -25,22 +25,19 @@ export const clientsRoutes = async(fastify,options) => {
     });
 
     fastify.post('/',  (req, rep) => {
-        const newClient = req.body;
-        console.log(newClient);
-       
-        console.log( (typeof Number(newClient.phone )));
-        pool.query(`INSERT INTO clients ( name, address, phone,email, password) VALUES ( ${newClient.name}, ${newClient.address}, 
-            ${Number(newClient.phone)}, ${newClient.email}, ${newClient.password});`, 
+        const {name, address, phone, email, password} = JSON.parse(req.body);       
+        pool.query(`INSERT INTO clients (name, address, phone,email, password) VALUES ('${name}', '${address}', ${Number(phone)}, '${email}', '${password}');`, 
         (err, res)=>{
             if(!err){
-                rep.send();
+                
                 console.log(res);
-                return ` A new client ${newClient.name} was created!`
+                 rep.send(res);
+               
             }else {
                 console.log(err.message);
-                
+                return 'Something went wrong!'
             }
         });   
-        return 'Something went wrong!'
+        
     });
 };
