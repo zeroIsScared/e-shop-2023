@@ -7,7 +7,8 @@ export const authRoutes =async(fastify, options)=>{
     fastify.post('/signin', (req, rep) => {
         console.log(req.body.email);
         pool.query(`SELECT * FROM clients WHERE email= '${req.body.email}' AND password= '${req.body.password}';`, (err, res) => {
-console.log(res)
+          console.log(res);
+          
          if (res.rows[0] === undefined) 
          {
             rep.code(401).send('Authorization failed!');
@@ -34,7 +35,7 @@ console.log(res)
         });
     });
 
-    fastify.delete('/signout', (req,rep) => {
+    fastify.post('/signout', (req,rep) => {
         console.log(req.body);
         pool.query(`DELETE FROM client_sessions WHERE session_id = '${req.body.session_id}'`, (err, res) => {
             if (res.rowCount === 0)
