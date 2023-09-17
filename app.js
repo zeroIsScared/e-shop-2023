@@ -12,6 +12,13 @@ const PORT = {port: 3000};
  fastify.register(homePageRoute);
  fastify.register(clientsRoutes, {prefix:'/clients'});
 
+fastify.decorate('testMiddleware',() => console.log(`TEST!!!`));
+
+fastify.addHook('preHandler', (request,reply, done)=> {
+    fastify.testMiddleware(request);
+    done();
+});
+
 const start =  async () =>{
     try{
         await fastify.listen(PORT);
