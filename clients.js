@@ -23,53 +23,48 @@ export const clientsRoutes = async(fastify,options) => {
         });
     });
 
+  
     fastify.get('/:id', {
     preHandler: async (request, reply) => {
-        console.log(request.query.session_id);
+
         const client = await fastify.pg.connect();
-            const clientQueryResult = await client.query(`SELECT * FROM clients WHERE id= ${request.params.id}`);
-        
-            if(!request.query.session_id && clientQueryResult.rows[0] !== undefined)
+        const clientQueryResult = await client.query(`SELECT * FROM clients WHERE id= ${request.params.id}`);
+        const sessionIdQuery = await client.query(`SELECT * FROM client_sessions WHERE session_id = '${request.query.session_id}' `);
+        console.log(`!!!!! ${request.query.session_id}` );
+            if((!request.query.session_id && clientQueryResult.rows[0] !== undefined) || (sessionIdQuery.rows[0] === undefined))
             {
                 reply.send({id: clientQueryResult.rows[0].id,
                     name: clientQueryResult.rows[0].name});
-                console.log(clientQueryResult);
-                
-            } 
-            else if(request.query.session_id) 
+               // console.log(clientQueryResult);   
+                console.log(`?????????`)    
+                console.log(clientQueryResult.rows[0])   
+                console.log(request.query.session_id)            
+            }
+            else if (clientQueryResult.rows[0] === undefined) 
             {
-                const sessionIdQuery = await client.query(`SELECT * FROM client_sessions WHERE session_id = '${request.query.session_id}' `);
-              
-                if(sessionIdQuery.rows[0] !== undefined && sessionIdQuery.rows[0].client_id == request.params.id)
-                {
+                rep.send(`The client with id ${request.params.id} was not found`);
 
-                   reply.send(clientQueryResult.rows[0]);
-                }  
-                else
-                {
-                  
-                        reply.send({id: clientQueryResult.rows[0].id,
-                        name: clientQueryResult.rows[0].name});
-                }             
-            } 
-            else 
-            {
-                reply.send(`The client with id ${request.params.id} was not found`)
-            }              
-        }      
+            }                         
+        }   
         
     ,
     handler: async (req, rep) => {
-        fastify.pg.query(`SELECT * FROM clients WHERE id= ${req.params.id}`,
-         (err, res) => {
-            if(!err) {
-                rep.send(res.rows[0]);
-            } else {
-                console.log(err.message);
-            }
-        });
-    }});
+        const client = await fastify.pg.connect();
+        const clientQueryResult = await client.query(`SELECT * FROM clients WHERE id= ${req.params.id}`);
+        
 
+         if(req.query.session_id !== undefined && req.params.id !== undefined ) 
+        {
+            const sessionIdQuery = await client.query(`SELECT * FROM client_sessions WHERE session_id = '${req.query.session_id}' `);
+          
+            if(sessionIdQuery.rows[0] !== undefined && sessionIdQuery.rows[0].client_id == req.params.id)
+            {
+                console.log(`!!!!!!!!!`)
+                rep.send(clientQueryResult.rows[0]);           
+            } 
+        }
+     }});
+    
     fastify.post('/',
     (req, rep) => {
         const bodyValidationFunction = req.compileValidationSchema(addClientsValidationBody)
