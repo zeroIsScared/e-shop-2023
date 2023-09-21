@@ -7,16 +7,20 @@ import {authRoutes} from './auth/sing_in_routes.js';
  const fastify= Fastify({logger:true});
 const PORT = {port: 3000};
 
+fastify.register(import('@fastify/postgres'), {
+    connectionString: 'postgres://postgres:01133@localhost:5432/e_shop_2023'
+})
+
  fastify.register(productRoutes, {prefix:'/products'});
  fastify.register(authRoutes, {prefix:'/auth'});
  fastify.register(homePageRoute);
  fastify.register(clientsRoutes, {prefix:'/clients'});
 
+ 
 fastify.decorate('testMiddleware',() => console.log(`TEST!!!`));
 
-fastify.addHook('preHandler', (request,reply, done)=> {
+fastify.addHook('preHandler', async (request,reply)=> {
     fastify.testMiddleware(request);
-    done();
 });
 
 const start =  async () =>{
@@ -28,4 +32,6 @@ const start =  async () =>{
         process.exit(1);
     }
 }
+
+
 start();

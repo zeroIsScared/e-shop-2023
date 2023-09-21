@@ -1,10 +1,10 @@
-import {pool} from '../databaseConnection.js';
+//import } from '../databaseConnection.js';
 
 export const homePageRoute = async(fastify, options)=> {
 fastify.get('/',  (req, rep) =>{
   
 
-    pool.query(
+    fastify.pg.query(
        `Select * FROM products`,
        (err, res)=>{
            if(!err) {

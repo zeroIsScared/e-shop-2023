@@ -1,4 +1,4 @@
- import {pool} from '../databaseConnection.js';
+// import {pool} from '../databaseConnection.js';
 
  const productRoutes = async(fastify, options)=> {
 
@@ -7,7 +7,7 @@ fastify.get('/:id',  (req, reply) => {
 const productId = req.params.id;
 console.log(productId);
 
-    pool.query(
+fastify.pg.query(
         `SELECT * FROM products WHERE id= ${productId};`, 
         (err, res)=>{
             if(!err) {

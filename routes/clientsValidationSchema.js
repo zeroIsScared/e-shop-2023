@@ -1,18 +1,18 @@
 
 export const addClientsValidationBody = {
    
-        type: "string",
+        type: "object",
         required: [
-            'name',
-            'address',
-            'phone',
-            'email',
-            'password'
+            "name",
+            "address",
+            "phone",
+            "email",
+        "password"
         ],
         properties: {
             name: {type: 'string'},
             address: {type: 'string'},
-            phone: {type: 'string'},
+            phone: {type: 'integer'},
             email: {type: 'string'},
             password: {type: 'string'}
         }
