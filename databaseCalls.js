@@ -56,8 +56,15 @@ export class databaseOperations {
     }
 
     deleteById = async (tableName, req) => {
-      await client.query(`DELETE FROM ${tableName} WHERE id = $1`,[req.params.id]);
+      const result = await client.query(`DELETE FROM ${tableName} WHERE id = $1`,[req.params.id]);
+      console.log(result);
    }
+
+   deleteBySessionId = async (tableName, req) => {
+    return  await client.query(`DELETE FROM ${tableName} WHERE session_id = $1`,[req.body.session_id]);
+   
+ }
+
     
     }
 
