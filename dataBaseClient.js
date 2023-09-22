@@ -9,3 +9,5 @@ const {Client} = pg;
             password: '01133',
             port: 5432,
  });  
+
+ await client.connect();

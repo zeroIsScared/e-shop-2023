@@ -1,35 +1,35 @@
 import  {databaseOperations} from '../databaseCalls.js';
 import { addClientsValidationBody, addClientsValidationResponse } from './clientsValidationSchema.js';
+import { checkSessionCorespondsToId, showOnlyIdName , notAuthorised} from './serviceHelpers.js';
 
-const dO = new databaseOperations();
+
 
 export const clientsRoutes = async(fastify,options) => {
+    const dO = new databaseOperations();
     fastify.get('/',async  (req, rep) =>{
-        const allClients = await dO.findAll('clients');
-        console.log(req.url);
-        fastify.pg.query('SELECT * FROM clients;', (err, res) => {
-            if(!err) {
+        try {
+            const allClients = await dO.findAll('clients');
+
+            const clients = allClients.rows.map(item  => {
+
+                return {id: item.id, name: item.name};          
                
-                const clients = res.rows.map(item  => {
-                  return {id: item.id, name: item.name};
-                 
-                });
-                console.log(`12 ${clients}`);
-                
-                rep.send(clients);
-            } 
-            else 
-            {
-                console.log(err.message);
-            }
+              });
+              rep.send(clients);
+
+        }catch (err)
+        {
+            console.log(err.message);
+
+        }   
         });
-    });
+    
 
     fastify.get('/:id', {
     preHandler: async (request, reply) => {
 
-        const client = await fastify.pg.connect();
-        const clientQueryResult = await client.query(`SELECT * FROM clients WHERE id=$1`, [request.params.id]);
+        
+        const clientQueryResult = await dO.findById('clients', request.params.id);
        
                      
             if ( !request.query.session_id && clientQueryResult.rows[0] === undefined || clientQueryResult.rows[0] === undefined ) 
@@ -39,92 +39,72 @@ export const clientsRoutes = async(fastify,options) => {
             }   
             else if((!request.query.session_id && clientQueryResult.rows[0] !== undefined))
             {
-                reply.send({id: clientQueryResult.rows[0].id,
-                name: clientQueryResult.rows[0].name});        
+                reply.send(showOnlyIdName(clientQueryResult));      
                         
             }                       
         }   
         
     ,
-    handler: async (req, rep) => {
-      
-        const client = await fastify.pg.connect();
-        const clientQueryResult = await client.query(`SELECT * FROM clients WHERE id=$1`, [request.params.id])          
-        const sessionIdQuery = await client.query(`SELECT * FROM client_sessions WHERE session_id = $1`, [req.query.session_id]);
+    handler: async (req, rep) => {        
 
+        const clientQueryResult = await dO.findById('clients', req.params.id);      
+       
                  
-            if(sessionIdQuery.rows[0] !== undefined && sessionIdQuery.rows[0].client_id == req.params.id)
+            if(checkSessionCorespondsToId(`client_sessions`,req))
             {                
                 rep.send(clientQueryResult.rows[0]);           
             } 
             else 
             {
-                rep.send({id: clientQueryResult.rows[0].id,
-                    name: clientQueryResult.rows[0].name});
+                rep.send(showOnlyIdName(clientQueryResult));
             }         
     }
     });
 
     fastify.post('/',
-    (req, rep) => {
+    async (req, rep) => {
+
         const bodyValidationFunction = req.compileValidationSchema(addClientsValidationBody)
         const validationResult =  bodyValidationFunction(req.body);
         
-     console.log(validationResult);
+     
          if( validationResult === false) {
-             rep.code(400).send(`In order to create anew client the request body should contain the name, address, phone, email and password fields`);
-        } else {
-    
-        const {name, address, phone, email, password} = req.body;   
-       
-        fastify.pg.query(`INSERT INTO clients (name, address, phone,email, password) VALUES ($1, $2, $3, $4, $5;`, [name, address, phone, email,password], 
-        (err, res)=>{
-            if(!err){
-            //console.log(res);                         
-                 rep.code(200).send(`A new client ${name} was added`);               
-            }else {
+             rep.code(400).send(`In order to create a new client the request body should contain the name, address, phone, email and password fields`);
+        } 
+        else 
+        {         
+
+          try{
+               await dO.createclient('clients', req.body);                    
+                            
+            } catch(err){
                 console.log(err.message);
-                return 'Something went wrong!'
+                return 'Something went wrong!';
             }
+
+            rep.code(200).send(`A new client ${req.body.name} was added`);   
+        }
             
-        }); 
-    };
-        
     }); 
+   
     
     fastify.patch('/:id', {
         preHandler: async (request, reply) => {              
                
                 if ( !request.query.session_id ) 
                 {
-                    reply.
-                    code(401).
-                    send(`Not authorised`);    
+                   notAuthorised(reply);
                 }   
                                      
             },
-        handler: async(req, rep)=> {
+        handler: async(req, rep)=> {                                        
       
-            const client = await fastify.pg.connect();                      
-            const sessionIdQuery = await client.query(`SELECT * FROM client_sessions WHERE session_id = $1`,[req.query.session_id]);
 
-            if( sessionIdQuery.rows[0] !== undefined && sessionIdQuery.rows[0].client_id == req.params.id)
+            if(checkSessionCorespondsToId(`client_sessions`,req))
             {
-                const body = req.body;
-                const reqItems=  Object.entries(body);
-               let newValues = [];
-               reqItems.forEach(item => {
-          
-                  if(item !== body.phone){
-                      newValues.push(`${item[0]} ='${item[1]}'`);
-                      
-                  } else {
-                      newValues.push(item[0] =Number(item[1]));
-                  }
-                });  
-
-                try{
-                    await client.query(`UPDATE clients SET $1 WHERE id = $2`,[newValues, req.params.id]);
+                try{              
+                   const res=  await dO.updateItem('clients',req);
+                   console.log(res);                   
                 }
                 catch(err){
                     console.log(err.message);
@@ -134,9 +114,7 @@ export const clientsRoutes = async(fastify,options) => {
             } 
             else 
             {
-                rep.
-                code(401).
-                send(`Not authorised`);    
+                notAuthorised(rep); 
             }                    
         }   
 
@@ -148,21 +126,17 @@ fastify.delete(`/:id`, {
         if ( !request.query.session_id ) 
 
                 {
-                    reply.
-                    code(401).
-                    send(`Not authorised`);    
+                    notAuthorised(reply); 
                 }                  
 
     },
-    handler: async (req, rep)=> {
-        const client = await fastify.pg.connect();                      
-            const sessionIdQuery = await client.query(`SELECT * FROM client_sessions WHERE session_id = $1`, req.query.session_id);
+    handler: async (req, rep)=> {                       
+            
 
-
-        if( sessionIdQuery.rows[0] !== undefined && sessionIdQuery.rows[0].client_id == req.params.id) 
+        if( checkSessionCorespondsToId(`client_sessions`,req)) 
         {
             try{
-                await client.query(`DELETE FROM clients WHERE id = $1`,[req.params.id]);
+                dO.deleteById('clients',req);
             }
             catch(err)
             {
@@ -173,12 +147,10 @@ fastify.delete(`/:id`, {
         }
         else
         {
-            rep.
-                code(401).
-                    send(`Not authorised`); 
+            notAuthorised(rep); 
         }  
 }
 });
-}
+};
 
     
